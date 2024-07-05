@@ -198,8 +198,6 @@ trait PrettyPrint: fmt::Display + fmt::Debug {
         println!("Debug: {:?}", self);
     }
 }
-
-
 ```
 
 В этом примере $PrettyPrint$ требует, чтобы типы, реализующие его, также реализовывали трейты $Display$ и $Debug$.
