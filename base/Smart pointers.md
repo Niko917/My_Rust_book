@@ -279,18 +279,6 @@ fn main() {
 ```
 
 
-
----
-
-## Deref && Drop traits
-
-Deref и Drop - это 2 важных трейта для работы с умными указателями.
-
-### Deref trait
-
-трейт Deref 
-
-
 ---
 
 ## Reference cycles
