@@ -15,7 +15,7 @@ Trait-объекты - это способ реализации абстракт
 
 ---
 
-## Реализация трейтов
+## Implementation
 
 - Трейты объявляются с помощью ключевого слова `trait`.
 
@@ -51,7 +51,6 @@ impl Summary for Article {
     }
 }
 ```
-
 
 
 ---
@@ -350,3 +349,208 @@ fn main() {
 - Компилятор Rust автоматически добавит код для вызова `drop`
    для поля `data`, чтобы вектор `Vec<i32>` также был корректно удален.
 
+---
+
+## [Ord trait](https://doc.rust-lang.org/std/cmp/trait.Ord.html) && [Eq trait](https://doc.rust-lang.org/std/cmp/trait.Eq.html)
+
+В Rust, `Ord`, `Eq`, `PartialOrd`, и `PartialEq` — это трейты, которые определяют различные виды упорядоченности между объектами.
+
+Для примитивных типов и типов из стандартной библиотеки Rust, таких как `i32`, `f64`, `String`, `Vec`, и других, трейты `Eq`, `PartialEq`, `Ord`, и `PartialOrd` уже определены.
+
+=> определение данных трейтов необходимо только для пользовательских типов.
+
+### [PartialEq trait](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html)
+
+`PartialEq` - Это трейт, который позволяет сравнивать экземпляры типа на равенство ($==$) и неравенство ($!=$).
+
+
+``` Rust
+pub trait PartialEq<Rhs = Self>
+where
+    Rhs: ?Sized, {
+    
+    // Required method
+    fn eq(&self, other: &Rhs) -> bool;
+
+    // Provided method
+    fn ne(&self, other: &Rhs) -> bool { ... }
+}
+```
+
+$\triangle$ Этот трейт позволяет проводить сравнения с использованием оператора равенства для типов, которые не имеют отношения полной эквивалентности.
+
+- Например, для действительных чисел NaN != NaN, поэтому типы с плавающей запятой реализуют `PartialEq`, но не `Eq`. 
+
+- Формально говоря, когда Rhs == Self, этот признак соответствует отношению частичной эквивалентности.
+
+$\triangle$ Реализации должны гарантировать, что `eq` и `ne` согласуются друг с другом:  
+  
+- a != b $<=>$, когда !(a == b).
+
+
+***Связь с маркерным трейтом`Eq`:***
+
+- `Eq` — это маркерный трейт, который указывает, что все значения типа могут быть сравнены на равенство.
+    
+- Если тип реализует `Eq`, он также должен реализовать `PartialEq`.
+    
+- `Eq` не требует дополнительных методов, так как он просто указывает, что `PartialEq` реализован корректно для всех значений типа.
+
+$\triangle$ [How can i compare 2 different types?](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#how-can-i-compare-two-different-types)
+
+
+### [Eq trait](https://doc.rust-lang.org/std/cmp/trait.Eq.html)
+
+Маркерный трейт Eq определяет отношение эквивалентности.
+
+=> Для любого объекта `a` выполняются свойства:
+
+- свойство рефлективности : $a == a$ 
+- свойство симметричности : если $a == b$, то $b == a$
+- свойство транзитивности : если $a == b$, $b == c$, то $a == c$
+
+***Связь с трейтом `PartialEq`:***
+
+- Трейт `Eq` является подмножеством `PartialEq`, который указывает, что каждый объект данного типа полностью эквивалентен самому себе.
+	- Это означает, что тип полностью поддерживает равенство, и нет таких объектов, при которых сравнение на равенство возвращало бы `false`.
+
+
+``` Rust
+#[derive(Debug, PartialEq, Eq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn main() {
+    let p1 = Point { x: 1, y: 2 };
+    let p2 = Point { x: 1, y: 2 };
+    let p3 = Point { x: 3, y: 4 };
+
+    println!("p1 == p2: {}", p1 == p2); // true
+    println!("p1 == p3: {}", p1 == p3); // false
+}
+```
+
+
+### [PartialOrd](https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html) trait
+
+`PartialOrd` — это трейт в Rust, который определяет частичную упорядоченность между объектами данного типа.
+
+
+``` Rust
+pub trait PartialOrd<Rhs = Self>: PartialEq<Rhs>
+where
+    Rhs: ?Sized, {
+    
+    // Required method
+    fn partial_cmp(&self, other: &Rhs) -> Option<Ordering>;
+
+    // Provided methods
+    fn lt(&self, other: &Rhs) -> bool { ... } // less than
+    fn le(&self, other: &Rhs) -> bool { ... } // less or eq
+    fn gt(&self, other: &Rhs) -> bool { ... } // greater than
+    fn ge(&self, other: &Rhs) -> bool { ... } // greater or eq
+}
+```
+
+$\triangle$ Методы `lt`, `le`, `gt` и `ge` этого трейта могут быть вызваны с помощью операторов `<`, `<=`, `>` и `>=` соответственно.
+
+$\triangle$ Методы этого трейта должны быть совместимы друг с другом и с методами `PartialEq`.
+
+$\triangle$ Должны выполняться следующие условия:
+1. `a == b` $<=>$ `partial_cmp(a, b) == Some(Equal)`.
+2. `a < b` $<=>$ `partial_cmp(a, b) == Some(Less)`
+3. `a > b` $<=>$ `partial_cmp(a, b) == Some(Greater)`
+4. `a <= b` $<=>$ `a < b || a == b`
+5. `a >= b` $<=>$ `a > b || a == b`
+6. `a != b` $<=>$ `!(a == b)`.
+
+
+$\triangle$ Derivable:
+
+``` Rust
+#[derive(PartialEq, PartialOrd)]
+enum E {
+    Top,
+    Bottom,
+}
+
+assert!(E::Top < E::Bottom);
+```
+
+
+``` Rust
+use std::cmp::Ordering;
+
+#[derive(Eq)]
+struct Person {
+    id: u32,
+    name: String,
+    height: u32,
+}
+
+impl PartialOrd for Person {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+```
+
+### [Ordering](https://doc.rust-lang.org/std/cmp/enum.Ordering.html) trait
+
+Ordering в Rust - это enum, который используется трейтами `PartialOrd` и `Ord` для описания порядка объектов. 
+
+Он имеет три варианта:
+
+- **`Less`**: объект считается меньше другого.
+- **`Equal`**: объекты равны.
+- **`Greater`**: объект считается больше другого.
+
+``` Rust
+use std::cmp::Ordering;
+
+let result = 1.0.partial_cmp(&2.0);
+assert_eq!(result, Some(Ordering::Less));
+
+let result = 1.0.partial_cmp(&1.0);
+assert_eq!(result, Some(Ordering::Equal));
+
+let result = 2.0.partial_cmp(&1.0);
+assert_eq!(result, Some(Ordering::Greater));
+```
+
+### [Ord trait](https://doc.rust-lang.org/std/cmp/trait.Ord.html)
+
+Трейт `Ord` в Rust является фундаментальным для типов, которые образуют полную упорядоченность.
+
+Полная упорядоченность — это бинарное отношение на множестве, где каждая пара элементов множества может быть сравнена друг с другом.
+
+``` Rust
+pub trait Ord: Eq + PartialOrd {
+    // Required method
+    fn cmp(&self, other: &Self) -> Ordering;
+
+    // Provided methods
+    fn max(self, other: Self) -> Self
+       where Self: Sized { ... }
+    fn min(self, other: Self) -> Self
+       where Self: Sized { ... }
+    fn clamp(self, min: Self, max: Self) -> Self
+       where Self: Sized + PartialOrd { ... }
+}
+```
+
+Реализации должны быть согласованы с реализацией PartialOrd и обеспечивать соответствие max, min и clamp требованиям cmp:
+  
+- partial_cmp(a, b) == Some(cmp(a, b)). 
+
+- max(a, b) == max_by(a, b, cmp) (обеспечивается реализацией по умолчанию).  
+
+- min(a, b) == min_by(a, b, cmp) (обеспечивается реализацией по умолчанию).  
+
+
+$\triangle$ Из вышеизложенного и требований PartialOrd следует, что $\forall$ a, b, c:  
+  
+- a < b || a == b || a > b истинно;  
+- < является транзитивным: a < b, b < c  =>  a < c.
