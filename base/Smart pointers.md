@@ -281,5 +281,144 @@ fn main() {
 
 ---
 
-## Reference cycles
+## ## [Reference cycles](https://www.youtube.com/watch?v=rzYS7dwGrhA)
+
+Циклические ссылки - это ситуация, когда 2 или более объектов ссылаются друг на друга.
+
+Данная проблема может привести к утечкам памяти, ведь данные объекты никогда не будут уничтожены после выхода из их локального lifetime.
+
+
+***Пример циклической ссылки:***
+
+
+``` Rust
+use std::rc::Rc;
+use std::cell::RefCell;
+
+struct Node {
+	value: i32,
+	next: RefCell<Option<Rc<Node>>>,
+}
+
+fn main() {
+	let a = Rc::new(Node{
+		value: 1,
+		next: RefCell::new(None),
+	});
+
+	let b = Rc::new(Node{
+		value: 2,
+		next: RefCell::new(Some(a.clone())),
+	})
+
+	if let Some(ref mut next) = *a.next.borrow_mut() {
+		*next = b.clone();
+	}
+}
+```
+
+
+В этом примере `a` и `b` ссылаются друг на друга через `Rc`, `RefCell`.
+
+Данный случай порождает циклическую ссылку и объекты `a` и `b` не будут удалены даже при выходе из функции `main`. 
+
+
+### [std::rc::Weak](https://doc.rust-lang.org/std/rc/struct.Weak.html)
+
+Для решения проблемы циклических ссылок в Rust можно использовать `Weak` из модуля `std::rc`.
+
+
+`std::rc::Weak` позволяет временно ссылаться на объект, при этом не инкрементируя счётчик ссылок.
+
+
+``` Rust
+pub struct Weak<T, A = Global>
+where A: Allocator, T: ?Sized,{
+/* private fields */
+}
+```
+
+
+
+- `std::rc::Weak` представляет из себя "слабую" версию умного указателя `Rc<T>`. 
+
+- данная структура данных хранит **невладеющую ссылку** на объект.
+
+- возможно преобразовать `Weak<T>` до `Rc<T>` c помощью метода `upgrade()`.
+	- это позволяет получить доступ к объекту, на который ссылался `Weak<T>`. 
+
+	- данный метод возвращает `Option<Rc<T>>`>`
+		- если объект, на который указывает `Weak<T>` ещё существует, то метод вернёт `Some(Rc<T>)`, иначе - вернёт `None`.
+		
+		- в случае, если `upgrade` вернёт `Some(Rc<T>)` "сильный" счётчик ссылок увеличится на единицу
+
+
+``` Rust
+use std::rc::{Rc, Weak};
+use std::cell::RefCell;
+
+struct Node {
+    value: i32,
+    next: Option<Rc<RefCell<Node>>>,
+    prev: Option<Weak<RefCell<Node>>>,
+}
+
+impl Node {
+    fn new(value: i32) -> Rc<RefCell<Node>> {
+        Rc::new(RefCell::new(Node {
+            value,
+            next: None,
+            prev: None,
+        }))
+    }
+}
+
+fn main() {
+    // creating two nodes
+    let node1 = Node::new(1);
+    let node2 = Node::new(2);
+
+    // linking nodes to doubly linked list
+    node1.borrow_mut().next = Some(node2.clone());
+    node2.borrow_mut().prev = Some(Rc::downgrade(&node1));
+
+    // Now node1 && node2 are linked
+    // node1 -> node2
+    // node2 -> node1 (through the Weak)
+
+    // cheching, that node2 can get access to the node1 through the Weak ref
+    if let Some(prev_node) = node2.borrow().prev.as_ref().and_then(|weak| weak.upgrade()) {
+        println!("Node2's previous node value: {}", prev_node.borrow().value);
+    } 
+    
+    else {
+        println!("Node2's previous node is gone.");
+    }
+
+    // deleting "strong ref" to node1
+    drop(node1);
+
+    // Now node1 is deleted, and Weak ref into node2 can't get upgraded anymore
+    if let Some(prev_node) = node2.borrow().prev.as_ref().and_then(|weak| weak.upgrade()) {
+        println!("Node2's previous node value: {}", prev_node.borrow().value);
+    } 
+    else {
+        println!("Node2's previous node is gone.");
+    };
+}
+```
+
+
+
+**разумные случаи использования `std::rc::Weak`:**
+
+- Иерархические структуры данных
+	- При работе с иерархическими структурами данных, такими как деревья или графы, `Weak<T>` может использоваться для создания ссылок от дочерних узлов к родительским узлам.
+		- Это позволяет избежать циклических зависимостей, которые могут возникнуть, если дочерние узлы будут хранить сильные ссылки на родительские узлы.
+
+- Временное хранение ссылок
+	- если есть необходимость хранить ссылки на объекты, но при этом важно, чтобы эти ссылки не влияли на время жизни объектов, то для этого можно использовать `Weak<T>`
+
+
+
 
