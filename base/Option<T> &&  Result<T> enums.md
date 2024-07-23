@@ -15,7 +15,7 @@ enum Option<T> {
 
 ### cases:
 
-***1.***  pattern matching
+***1.***  pattern matching ^8c8e1b
 
 ```Rust
 fn divide(numerator: f64, denominator: f64) -> Option<f64> {
@@ -103,7 +103,7 @@ fn main() {
 
 ## '?' operator 
 
-? - оператор для удобной обработки ошибок при работе с перечислениями Result и Option
+? - оператор для [[match && pattern matching]] при работе с перечислениями Result и Option
 
 Рассмотрим пример
 ```Rust
