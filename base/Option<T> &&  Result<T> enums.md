@@ -96,6 +96,11 @@ fn main() {
 
 ---
 
+### [`&Option<T>` vs `Option<&T>`](https://www.youtube.com/watch?v=6c7pZYP_iIE)
+
+
+---
+
 ## '?' operator 
 
 ? - оператор для удобной обработки ошибок при работе с перечислениями Result и Option
