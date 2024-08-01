@@ -66,7 +66,9 @@ pub struct TraitObject {
 }
 ```
 
-![[trait_obj.png|400]]
+![[trait object layout.png|375]]
+
+
 
 ---
 
