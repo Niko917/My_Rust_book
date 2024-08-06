@@ -501,3 +501,90 @@ $\triangle$ Из вышеизложенного и требований PartialO
   
 - a < b || a == b || a > b истинно;  
 - < является транзитивным: a < b, b < c  =>  a < c.
+
+---
+
+## [Allocator](https://doc.rust-lang.org/std/alloc/trait.Allocator.html) trait
+
+В Rust трейт `Allocator` является частью стандартной библиотеки и предназначен для абстрагирования процесса выделения и освобождения памяти.
+
+данный trait определяет несколько основных методов, которые должны быть реализованы для любого аллокатора:
+
+- **allocate**: Выделяет блок памяти заданного размера и выравнивания.
+    
+- **allocate_zeroed**: Выделяет блок памяти заданного размера и выравнивания, заполняя его нулями.
+    
+- **deallocate**: Освобождает ранее выделенный блок памяти.
+    
+- **grow**: Увеличивает размер ранее выделенного блока памяти.
+    
+- **grow_zeroed**: Увеличивает размер ранее выделенного блока памяти, заполняя новые байты нулями.
+    
+- **shrink**: Уменьшает размер ранее выделенного блока памяти.
+
+``` Rust
+pub unsafe trait Allocator {
+    // Required methods
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError>;
+    
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout);
+
+    // Provided methods
+    fn allocate_zeroed(&self, layout: Layout,)
+     -> Result<NonNull<[u8]>, AllocError> { ... }
+    
+    unsafe fn grow(
+	    &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> { ... }
+    
+    unsafe fn grow_zeroed(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> { ... }
+    
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> { ... }
+    
+    fn by_ref(&self) -> &Self
+       where Self: Sized { ... }
+}
+```
+
+
+---
+### `Layout` [struct](https://doc.rust-lang.org/std/alloc/struct.Layout.html)
+
+`Layout` является структурой из модуля `alloc::alloc`, которая описывает конкретный блок памяти:
+
+- size - размер блока памяти в байтах, необходимый для выделения
+	- Размер, округленный до ближайшего значения, кратного align, не превышает isize::MAX
+- align - выравнивание блока памяти в байтах 
+  (по степени двойки)
+
+данная структура необходима в качестве входных данных для аллокатора.
+
+``` Rust
+use std::alloc::{Layout, alloc};
+
+unsafe {
+    let layout = Layout::new::<u64>(); // Create a Layout for the u64 type
+    if layout.size() > 0 {
+        let ptr = alloc(layout); // Allocate memory with the specified size and alignment
+        // Use the allocated memory
+        // ...
+        // Free the memory
+    } else {
+        // Handle the case of zero size
+    }
+}
+```
+

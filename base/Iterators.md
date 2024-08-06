@@ -432,3 +432,9 @@ assert!(!a.iter().any(|&x| x > 5));
 ```
 
 ---
+
+## Advanced
+
+[1](https://blog.jetbrains.com/rust/2024/03/12/rust-iterators-beyond-the-basics-part-ii-key-aspects/)
+
+[2](https://blog.jetbrains.com/rust/2024/03/12/rust-iterators-beyond-the-basics-part-iii-tips-and-tricks/)
